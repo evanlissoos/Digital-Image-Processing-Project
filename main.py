@@ -21,6 +21,7 @@ parser.add_argument('--input_dir',         type=str,  required=False, default='i
 parser.add_argument('--input_cull_factor', type=int,  required=False, default=1)
 parser.add_argument('--output_dir',        type=str,  required=False, default='output')
 parser.add_argument('--output_all_frames', type=bool, required=False, default=False)
+parser.add_argument('--output_mean_med',   type=bool, required=False, default=True)
 parser.add_argument('--ext',               type=str,  required=False, default='.jpg')
 parser.add_argument('--num_rounds',        type=int,  required=False, default=1)
 args = parser.parse_args()
@@ -76,14 +77,16 @@ if args.output_all_frames:
     for i in range(len(frames)):
         output_img(frames[i], args.output_dir + '/' + str(i) + args.ext)
 
-# Processing
-# To convert to numpy array: frames[0].numpy()
-stack = torch.stack(frames)
-del frames
-print('Generating median image')
-median = torch.median(stack, 0)[0]
-print('Generating mean image')
-mean = torch.mean(stack, 0)
+# Compute and output mean and median images
+if args.output_mean_med:
+    # Processing
+    # To convert to numpy array: frames[0].numpy()
+    stack = torch.stack(frames)
+    del frames
+    print('Generating median image')
+    median = torch.median(stack, 0)[0]
+    print('Generating mean image')
+    mean = torch.mean(stack, 0)
 
-output_img(median, args.output_dir + '/median' + args.ext)
-output_img(mean, args.output_dir + '/mean' + args.ext)
+    output_img(median, args.output_dir + '/median' + args.ext)
+    output_img(mean, args.output_dir + '/mean' + args.ext)
