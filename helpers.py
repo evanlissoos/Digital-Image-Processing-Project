@@ -88,3 +88,90 @@ def output_img(img, path):
         print('\'%s\' saved!'%path)
     else:
         raise ValueError('Change [\'%s\'] to [\'.jpg\',\'.png\',\'.jpeg\',\'.bmp\']'% ext)
+
+
+# Function to produce the input image set
+def get_input_image_set(input_dir, ext, input_cull_factor):
+    input_imgs = glob(input_dir + '/*' + ext)
+    input_imgs.sort()
+    input_imgs_culled = []
+    for i in range(len(input_imgs)):
+        if i % input_cull_factor == 0:
+            input_imgs_culled.append(input_imgs[i])
+    input_imgs = input_imgs_culled
+
+    # Function to help sort files with numbers
+    def natural_keys(text):
+        def atoi(text):
+            return int(text) if text.isdigit() else text
+        return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+
+    input_imgs.sort(key=natural_keys)
+    return input_imgs
+
+# Function for aligning two images using OpenCV libraries
+def alignImages(images):
+
+    def alignImagesSub(im1, im2):
+        # Function parameters
+        MAX_FEATURES = 20000
+        GOOD_MATCH_PERCENT = 0.25
+
+        # Convert images to grayscale
+        im1Gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+        im2Gray = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)
+
+        # Detect ORB features and compute descriptors.
+        orb = cv2.ORB_create(MAX_FEATURES)
+        keypoints1, descriptors1 = orb.detectAndCompute(im1Gray, None)
+        keypoints2, descriptors2 = orb.detectAndCompute(im2Gray, None)
+
+        # Match features.
+        matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+        matches = matcher.match(descriptors1, descriptors2, None)
+
+        # Sort matches by score
+        matches.sort(key=lambda x: x.distance, reverse=False)
+
+        # Remove not so good matches
+        numGoodMatches = int(len(matches) * GOOD_MATCH_PERCENT)
+        matches = matches[:numGoodMatches]
+
+        # Draw top matches
+        imMatches = cv2.drawMatches(im1, keypoints1, im2, keypoints2, matches, None)
+        cv2.imwrite("matches.jpg", imMatches)
+
+        # Extract location of good matches
+        points1 = np.zeros((len(matches), 2), dtype=np.float32)
+        points2 = np.zeros((len(matches), 2), dtype=np.float32)
+
+        for i, match in enumerate(matches):
+            points1[i, :] = keypoints1[match.queryIdx].pt
+            points2[i, :] = keypoints2[match.trainIdx].pt
+
+        # Find homography
+        h, mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+
+        # Use homography
+        height, width, channels = im2.shape
+        im1Reg = cv2.warpPerspective(im1, h, (width, height))
+
+        return im1Reg, h
+
+    base_img = len(images)//2
+    for i in range(len(images)):
+        if i != base_img:
+            im    = images[i]
+            imReg, h = alignImagesSub(im, images[base_img])
+            images[i] = imReg
+    return images
+
+# Function to output an image set as a GIF
+def frames_to_gif(images, output_path, filenames=False):
+    read_images = images
+    if filenames:
+        read_images = []
+        for image in images:
+            read_images.append(imread(image))
+
+    imageio.mimsave(output_path, read_images)
