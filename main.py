@@ -19,6 +19,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_dir',         type=str,  required=False, default='input')
 parser.add_argument('--input_cull_factor', type=int,  required=False, default=1)
+parser.add_argument('--resize_img_factor', type=float,required=False, default=1.0)
 parser.add_argument('--output_dir',        type=str,  required=False, default='output')
 parser.add_argument('--output_all_frames', type=bool, required=False, default=False)
 parser.add_argument('--output_mean_med',   type=bool, required=False, default=True)
@@ -48,17 +49,19 @@ ABMNet.cuda()
 SynNet.cuda()
 
 # Cull down input set
-input_imgs = glob(args.input_dir + '/*' + args.ext)
-input_imgs.sort()
-input_imgs_culled = []
-for i in range(len(input_imgs)):
-    if i % args.input_cull_factor == 0:
-        input_imgs_culled.append(input_imgs[i])
-input_imgs = input_imgs_culled
+# input_imgs = glob(args.input_dir + '/*' + args.ext)
+# input_imgs.sort()
+# input_imgs_culled = []
+# for i in range(len(input_imgs)):
+#     if i % args.input_cull_factor == 0:
+#         input_imgs_culled.append(input_imgs[i])
+# input_imgs = input_imgs_culled
+input_imgs = get_input_image_set(args.input_dir, args.ext, args.input_cull_factor)
 
 print('Using ' + str(len(input_imgs)) + ' source frames')
 
-frames = [TF.to_tensor(imread(img)).unsqueeze(0) for img in input_imgs]
+read_input_imgs = resize_image_set([imread(img) for img in input_imgs], args.resize_img_factor)
+frames = [TF.to_tensor(img).unsqueeze(0) for img in read_input_imgs]
 
 # Iterate through number rounds to generate interpolated images
 for round in range(args.num_rounds):

@@ -5,6 +5,7 @@ import torchvision.transforms.functional as TF
 from torchvision.utils import save_image
 from math import ceil
 from skimage.io import imread
+from cv2 import resize
 
 from utils import warp
 from model import SBMENet, ABMRNet, SynthesisNet
@@ -89,6 +90,14 @@ def output_img(img, path):
     else:
         raise ValueError('Change [\'%s\'] to [\'.jpg\',\'.png\',\'.jpeg\',\'.bmp\']'% ext)
 
+
+# Function to resize images
+def resize_image_set(images, resize_factor):
+    for i in range(len(images)):
+        img = images[i]
+        resize_dim = (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor))
+        images[i] = resize(img, resize_dim)
+    return images
 
 # Function to produce the input image set
 def get_input_image_set(input_dir, ext, input_cull_factor):
