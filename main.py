@@ -20,6 +20,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--input_dir',         type=str,  required=False, default='input')
 parser.add_argument('--input_cull_factor', type=int,  required=False, default=1)
 parser.add_argument('--resize_img_factor', type=float,required=False, default=1.0)
+# parser.add_argument('--exposure_length',   type=float,required=False, default=1.0)
+# Add this functionality to allow for resizing of the exposure length
 parser.add_argument('--output_dir',        type=str,  required=False, default='output')
 parser.add_argument('--output_all_frames', type=bool, required=False, default=False)
 parser.add_argument('--output_mean_med',   type=bool, required=False, default=True)
