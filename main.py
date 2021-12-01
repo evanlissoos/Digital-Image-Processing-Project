@@ -5,13 +5,14 @@ import torchvision.transforms.functional as TF
 from torchvision.utils import save_image
 from math import ceil
 from skimage.io import imread
-from glob import glob
+import matplotlib.pyplot as plt
 
 from utils import warp
 from model import SBMENet, ABMRNet, SynthesisNet
 
 from torch.backends import cudnn
 from helpers import *
+from window import *
 cudnn.benchmark = True
 
 import argparse
@@ -27,6 +28,7 @@ parser.add_argument('--output_all_frames', type=bool, required=False, default=Fa
 parser.add_argument('--output_mean_med',   type=bool, required=False, default=True)
 parser.add_argument('--ext',               type=str,  required=False, default='.jpg')
 parser.add_argument('--num_rounds',        type=int,  required=False, default=1)
+parser.add_argument('--mask',              type=bool, required=False, default=True)
 args = parser.parse_args()
 
 args.DDP = False
@@ -63,6 +65,21 @@ input_imgs = get_input_image_set(args.input_dir, args.ext, args.input_cull_facto
 print('Using ' + str(len(input_imgs)) + ' source frames')
 
 read_input_imgs = resize_image_set([imread(img) for img in input_imgs], args.resize_img_factor)
+# read_input_imgs = alignImages(read_input_imgs)
+
+k = 10
+thresh = 3
+motion_mask = mask_gen(k, thresh, read_input_imgs)
+motion_mask = np.array([motion_mask, motion_mask, motion_mask])
+motion_mask_inv = np.invert(motion_mask) & 1
+import cv2
+motion_mask = mask_gen(k, thresh, read_input_imgs) * 255
+cv2.imshow('Mask', motion_mask.astype(np.uint8))
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+quit()
+
+print('Image size ' + str(read_input_imgs[0].shape))
 frames = [TF.to_tensor(img).unsqueeze(0) for img in read_input_imgs]
 
 # Iterate through number rounds to generate interpolated images
@@ -86,12 +103,28 @@ if args.output_all_frames:
 if args.output_mean_med:
     # Processing
     # To convert to numpy array: frames[0].numpy()
+    base_frame = frames[-1].numpy()[0] * motion_mask_inv
     stack = torch.stack(frames)
     del frames
-    print('Generating median image')
-    median = torch.median(stack, 0)[0]
-    print('Generating mean image')
-    mean = torch.mean(stack, 0)
-
-    output_img(median, args.output_dir + '/median' + args.ext)
-    output_img(mean, args.output_dir + '/mean' + args.ext)
+    if args.mask:
+        print('Generating median image')
+        median = torch.median(stack, 0)[0]
+        median = median.numpy()[0] * motion_mask + base_frame
+        median = np.swapaxes(np.swapaxes(median, 0, 2), 0, 1)
+        median = median * 255
+        median = median.astype(np.uint8)
+        print('Generating mean image')
+        mean = torch.mean(stack, 0)
+        mean = mean.numpy()[0] * motion_mask + base_frame
+        mean = np.swapaxes(np.swapaxes(mean, 0, 2), 0, 1)
+        mean = mean * 255
+        mean = mean.astype(np.uint8)
+        plt.imsave(args.output_dir + '/median' + args.ext, median)
+        plt.imsave(args.output_dir + '/mean' + args.ext, mean)
+    else:
+        print('Generating median image')
+        median = torch.median(stack, 0)[0]
+        print('Generating mean image')
+        mean = torch.mean(stack, 0)
+        output_img(median, args.output_dir + '/median' + args.ext)
+        output_img(mean, args.output_dir + '/mean' + args.ext)

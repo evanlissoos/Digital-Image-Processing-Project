@@ -19,12 +19,12 @@ def mask_gen(k,THRESH,input_imgs):
     #k size of the block for temporal average
     #THRESH theshold of movement
     #input_imgs array of directions to files
-    input_imgs= sorted(input_imgs,key=numericalSort)
+    # input_imgs= sorted(input_imgs,key=numericalSort)
     
     #READ EACH BLOCK OF IMAGES
-    mask=np.zeros(cv2.imread(input_imgs[0]).shape[0:2])
+    mask=np.zeros(input_imgs[0].shape[0:2])
     for i in range(len(input_imgs)-k) :
-        frames = [cv2.imread(img) for img in input_imgs[0+i:k+i]]
+        frames = [img for img in input_imgs[0+i:k+i]]
 
         gray_bg=np.array(np.zeros(frames[0].shape[0:2]))
         #AVRG THE FRAMES

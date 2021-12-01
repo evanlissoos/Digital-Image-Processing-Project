@@ -72,8 +72,8 @@ def alignImages(images):
         matches = matches[:numGoodMatches]
 
         # Draw top matches
-        imMatches = cv2.drawMatches(im1, keypoints1, im2, keypoints2, matches, None)
-        cv2.imwrite("matches.jpg", imMatches)
+        # imMatches = cv2.drawMatches(im1, keypoints1, im2, keypoints2, matches, None)
+        # cv2.imwrite("matches.jpg", imMatches)
 
         # Extract location of good matches
         points1 = np.zeros((len(matches), 2), dtype=np.float32)
@@ -109,20 +109,3 @@ def frames_to_gif(images, output_path, filenames=False):
             read_images.append(imread(image))
 
     imageio.mimsave(output_path, read_images)
-
-# Find and cull down input set
-input_imgs = get_input_image_set(args.input_dir, args.ext, args.input_cull_factor)
-read_input_imgs = [imread(img) for img in input_imgs]
-images = resize_image_set(read_input_imgs, args.resize_img_factor)
-
-output_path = args.output_dir + '/animation.gif'
-
-frames_to_gif(read_input_imgs, args.output_dir + '/unaligned.gif')
-imave = np.average(np.array([np.array(im) for im in read_input_imgs]),axis=0)
-cv2.imwrite(args.output_dir + '/unaligned_mean.png', imave)
-
-alignImages(read_input_imgs)
-
-frames_to_gif(read_input_imgs, args.output_dir + '/aligned.gif')
-imave = np.average(np.array([np.array(im) for im in read_input_imgs]),axis=0)
-cv2.imwrite(args.output_dir + '/aligned_mean.png', imave)

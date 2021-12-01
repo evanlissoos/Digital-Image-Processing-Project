@@ -5,7 +5,10 @@ import torchvision.transforms.functional as TF
 from torchvision.utils import save_image
 from math import ceil
 from skimage.io import imread
-from cv2 import resize
+import cv2
+from glob import glob
+import re
+import numpy as np
 
 from utils import warp
 from model import SBMENet, ABMRNet, SynthesisNet
@@ -96,7 +99,7 @@ def resize_image_set(images, resize_factor):
     for i in range(len(images)):
         img = images[i]
         resize_dim = (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor))
-        images[i] = resize(img, resize_dim)
+        images[i] = cv2.resize(img, resize_dim)
     return images
 
 # Function to produce the input image set
